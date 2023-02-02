@@ -1,4 +1,4 @@
-module golanglearning/new_project/multi_cluster_informer
+module multi_cluster_informer
 
 go 1.18
 

@@ -17,20 +17,14 @@ const (
 
 
 const (
-	// EventAdd is sent when an object is added
 	EventAdd = "add"
-
-	// EventUpdate is sent when an object is modified
-	// Captures the modified object
 	EventUpdate = "update"
-
-	// EventDelete is sent when an object is deleted
-	// Captures the object at the last known state
 	EventDelete = "delete"
 )
 
 // 放入队列 的数据
 type QueueObject struct {
+	ClusterName 	string      // 集群名称
 	Event    		string 		// 事件对象
 	ResourceType 	string 	    // 资源对象
 	Key      		string  	// <namespace>/<name>

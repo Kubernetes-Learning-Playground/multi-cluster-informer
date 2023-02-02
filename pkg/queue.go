@@ -64,9 +64,8 @@ func (c *wq) Finish(obj QueueObject) {
 
 // 重新放入
 func (c *wq) ReQueue(obj QueueObject) error {
-	if c.NumRequeues(obj) < 3 {
-		// Re-enqueue the key rate limited. Based on the rate limiter on the
-		// queue and the re-enqueue history, the key will be processed later again.
+	if c.NumRequeues(obj) < c.MaxReQueueTime {
+		// 这里会重新放入对列
 		c.AddRateLimited(obj)
 		return nil
 	}

@@ -45,6 +45,7 @@ type controller struct {
 // 是否实现MultiClusterInformer接口
 var _ MultiClusterInformer = &controller{}
 
+// NewMultiClusterInformer 入参：最大重回对列次数、集群对象列表
 func NewMultiClusterInformer(maxReQueueTime int, clusters ...Cluster) (MultiClusterInformer, error) {
 	core := &controller{
 		queue:   newWorkQueue(maxReQueueTime),
@@ -61,13 +62,13 @@ func NewMultiClusterInformer(maxReQueueTime int, clusters ...Cluster) (MultiClus
 			return nil, err
 		}
 		// 遍历所有资源，建立indexer
-		for _, r := range c.Resources {
+		for _, r := range c.MetaData.List {
 			var indexer cache.Indexer
 			var informer cache.Controller
 			if r.RType == Deployments {
-				indexer, informer = r.createAppsV1IndexInformer(client, core.queue)
+				indexer, informer = r.createAppsV1IndexInformer(client, core.queue, c.MetaData.ClusterName)
 			} else {
-				indexer, informer = r.createCoreV1IndexInformer(client, core.queue)
+				indexer, informer = r.createCoreV1IndexInformer(client, core.queue, c.MetaData.ClusterName)
 			}
 
 			// 放入 list中
@@ -83,29 +84,27 @@ func NewMultiClusterInformer(maxReQueueTime int, clusters ...Cluster) (MultiClus
 }
 
 // 处理informer逻辑
-func initHandle(resource string, worker queue) cache.ResourceEventHandlerFuncs {
+func initHandle(resource string, worker queue, clusterName string) cache.ResourceEventHandlerFuncs {
 	handler := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err == nil {
-				worker.push(QueueObject{EventAdd, resource, key, time.Now()})
+				worker.push(QueueObject{clusterName, EventAdd, resource, key, time.Now()})
 			}
 		},
 		UpdateFunc: func(old interface{}, new interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(new)
-			//bAdd := true
 			if err == nil {
 				// 放入
-				worker.push(QueueObject{EventUpdate, resource, key, time.Now()})
+				worker.push(QueueObject{clusterName,EventUpdate, resource, key, time.Now()})
 
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			// IndexerInformer uses a delta queue, therefore for deletes we have to use this
-			// key function.
+
 			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err == nil {
-				worker.push(QueueObject{EventDelete, resource, key, time.Now()})
+				worker.push(QueueObject{clusterName,EventDelete, resource, key, time.Now()})
 			}
 		},
 	}
@@ -135,7 +134,7 @@ func (s informerList) run(done chan struct{}) {
 		go one.Run(done)
 
 		if !cache.WaitForCacheSync(done, one.HasSynced) {
-			panic("Timed out waiting for caches to sync")
+			panic("等待内部缓存超时")
 		}
 	}
 }
@@ -146,34 +145,40 @@ type ResourceAndNamespace struct {
 	Namespace      string
 }
 
+// MetaData 集群对象所需的信息
+type MetaData struct {
+	List []ResourceAndNamespace
+	ClusterName string
+}
+
 // 构造informer需要的资源
-func (r *ResourceAndNamespace) createCoreV1IndexInformer(client *kubernetes.Clientset, worker queue) (indexer cache.Indexer, informer cache.Controller)  {
+func (r *ResourceAndNamespace) createCoreV1IndexInformer(client *kubernetes.Clientset, worker queue, clusterName string) (indexer cache.Indexer, informer cache.Controller)  {
 	lw := cache.NewListWatchFromClient(client.CoreV1().RESTClient(), r.RType, r.Namespace, fields.Everything())
 	switch r.RType {
 	case Services:
-		indexer, informer = cache.NewIndexerInformer(lw, &v1.Service{}, 0, initHandle(Services, worker), cache.Indexers{})
+		indexer, informer = cache.NewIndexerInformer(lw, &v1.Service{}, 0, initHandle(Services, worker, clusterName), cache.Indexers{})
 	case Pods:
-		indexer, informer = cache.NewIndexerInformer(lw, &v1.Pod{}, 0, initHandle(Pods, worker), cache.Indexers{})
+		indexer, informer = cache.NewIndexerInformer(lw, &v1.Pod{}, 0, initHandle(Pods, worker, clusterName), cache.Indexers{})
 	case ConfigMaps:
-		indexer, informer = cache.NewIndexerInformer(lw, &v1.ConfigMap{}, 0, initHandle(ConfigMaps, worker), cache.Indexers{})
+		indexer, informer = cache.NewIndexerInformer(lw, &v1.ConfigMap{}, 0, initHandle(ConfigMaps, worker, clusterName), cache.Indexers{})
 	}
 	return
 }
 
 // 构造informer需要的资源
-func (r *ResourceAndNamespace) createAppsV1IndexInformer(client *kubernetes.Clientset, worker queue) (indexer cache.Indexer, informer cache.Controller)  {
+func (r *ResourceAndNamespace) createAppsV1IndexInformer(client *kubernetes.Clientset, worker queue, clusterName string) (indexer cache.Indexer, informer cache.Controller)  {
 	lw := cache.NewListWatchFromClient(client.AppsV1().RESTClient(), r.RType, r.Namespace, fields.Everything())
 	switch r.RType {
 	case Deployments:
-		indexer, informer = cache.NewIndexerInformer(lw, &v1.Service{}, 0, initHandle(Deployments, worker), cache.Indexers{})
+		indexer, informer = cache.NewIndexerInformer(lw, &v1.Service{}, 0, initHandle(Deployments, worker, clusterName), cache.Indexers{})
 	}
 	return
 }
 
-// 集群对象
+// Cluster 集群对象
 type Cluster struct {
 	ConfigPath      string // kube config文件
-	Resources       []ResourceAndNamespace
+	MetaData 		MetaData
 }
 
 // 初始化client
@@ -191,6 +196,6 @@ func (c *Cluster) newClient() (*kubernetes.Clientset, error) {
 		}
 		return clientset, nil
 	}
-	return nil, errors.New("Can`t find a way to access to k8s api. Please make sure ConfigPath or MasterUrl in cluster ")
+	return nil, errors.New("无法找到集群client端")
 }
 
