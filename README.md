@@ -8,8 +8,10 @@ informer机制。
 1. 可提供多集群informer
 2. 可提供多资源informer，目前只支持pods、services、configmaps、deployments等。
 
+[](https://github.com/googs1025/multi-cluster-informer/blob/main/image/%E6%B5%81%E7%A8%8B%E5%9B%BE.jpg?raw=true)
+
 ### 附注：
-1. 目录下创建一个resources文件，把集群的.kube/config文件复制一份放入(记得cluster server需要改成"公网ip")。
+1. 目录下创建一个resource文件，把集群的.kube/config文件复制一份放入(记得cluster server需要改成"公网ip")。
 2. 本项目使用insecurity模式，所以config文件需要把certificate-authority-data字段删除，否则连接会报错。
 3. 可以放置多个.kube/config配置文件，支持多集群list查询。
 
