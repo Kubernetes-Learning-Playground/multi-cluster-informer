@@ -20,7 +20,11 @@ informer机制。
 func main() {
 
 	r, err := pkg.NewMultiClusterInformer(
-		5,
+		5, // 可以设置最大重新入队次数。
+		// 每个集群的配置都是一个Cluster实例。
+		// 1. ConfigPath:config文件
+		// 2. MetaData.ClusterName:集群名
+		// 3. MetaData.List:多资源+Namespace名 
 		pkg.Cluster{
 			ConfigPath:"/xxxxxxxx/multi_cluster_informer/resource/config1",
 			MetaData: pkg.MetaData{
