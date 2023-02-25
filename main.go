@@ -1,7 +1,7 @@
 package main
 
 import (
-
+	"k8s.io/klog/v2"
 	"multi_cluster_informer/pkg"
 	"time"
 
@@ -18,29 +18,29 @@ func main() {
 			MetaData: pkg.MetaData{
 				ClusterName: "cluster1",
 				List: []pkg.ResourceAndNamespace{
-					//{pkg.Services, "default"},
-					//{pkg.ConfigMaps, "default"},
-					{pkg.Pods, "default"}, // 支持使用all 来监听所有命名空间的资源
-					//{pkg.Deployments, "default"},
+					{pkg.Services, "default"},
+					{pkg.ConfigMaps, "default"},
+					{pkg.Pods, "all"}, // 支持使用all 来监听所有命名空间的资源
+					{pkg.Deployments, "all"},
 				},
 
 			},
 		},
-		//pkg.Cluster{
-		//	ConfigPath:"/Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config",
-		//	MetaData: pkg.MetaData{
-		//		ClusterName: "cluster2",
-		//		List: []pkg.ResourceAndNamespace{
-		//			{pkg.Services, "default"},
-		//			{pkg.ConfigMaps, "default"},
-		//			{pkg.Pods, "default"},
-		//		},
-		//
-		//	},
-		//},
+		pkg.Cluster{
+			ConfigPath:"/Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config",
+			MetaData: pkg.MetaData{
+				ClusterName: "cluster2",
+				List: []pkg.ResourceAndNamespace{
+					{pkg.Services, "default"},
+					{pkg.ConfigMaps, "default"},
+					{pkg.Pods, "default"},
+				},
+
+			},
+		},
 	)
 	if err != nil {
-		panic(err)
+		klog.Fatal("multi cluster informer err: ", err)
 	}
 
 	// 执行informer监听
@@ -49,7 +49,7 @@ func main() {
 	for {
 		obj, _ := r.Pop()
 		// 如果自己的业务逻辑发生问题，可以重新放回队列。
-		if err := process(obj); err != nil {
+		if err = process(obj); err != nil {
 			_ = r.ReQueue(obj) // 重新入列
 		} else { // 完成就结束
 			r.Finish(obj)
