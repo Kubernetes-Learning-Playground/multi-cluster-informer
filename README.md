@@ -9,8 +9,10 @@ informer机制。
 2. 可提供多资源informer，目前只支持pods、services、configmaps、deployments等。
 3. 可支持在配置namespace时，使用all字段来监听所有namespace的资源。
 
+![](https://github.com/googs1025/multi-cluster-informer/blob/main/image/%E6%B5%81%E7%A8%8B%E5%9B%BE.jpg?raw=true)
+
 ### 附注：
-1. 目录下创建一个resources文件，把集群的.kube/config文件复制一份放入(记得cluster server需要改成"公网ip")。
+1. 目录下创建一个resource文件，把集群的.kube/config文件复制一份放入(记得cluster server需要改成"公网ip")。
 2. 本项目使用insecurity模式，所以config文件需要把certificate-authority-data字段删除，否则连接会报错。
 3. 可以放置多个.kube/config配置文件，支持多集群list查询。
 
@@ -19,7 +21,11 @@ informer机制。
 func main() {
 
 	r, err := pkg.NewMultiClusterInformer(
-		5,
+		5, // 可以设置最大重新入队次数。
+		// 每个集群的配置都是一个Cluster实例。
+		// 1. ConfigPath:config文件
+		// 2. MetaData.ClusterName:集群名
+		// 3. MetaData.List:多资源+Namespace名 
 		pkg.Cluster{
 			ConfigPath:"/xxxxxxxx/multi_cluster_informer/resource/config1",
 			MetaData: pkg.MetaData{
