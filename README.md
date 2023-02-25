@@ -5,8 +5,9 @@
 informer机制。
 
 支持功能：
-1. 可提供多集群informer
+1. 可提供"多集群"informer。
 2. 可提供多资源informer，目前只支持pods、services、configmaps、deployments等。
+3. 可支持在配置namespace时，使用all字段来监听所有namespace的资源。
 
 ### 附注：
 1. 目录下创建一个resources文件，把集群的.kube/config文件复制一份放入(记得cluster server需要改成"公网ip")。
