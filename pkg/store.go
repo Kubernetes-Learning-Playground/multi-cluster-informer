@@ -7,9 +7,7 @@ import (
 // 本地缓存 接口
 type store interface {
 	List(string) []interface{}
-
 	ListKeys(string) []string
-
 	GetByKey(r string, key string) (items []interface{}, exists bool)
 }
 
@@ -140,4 +138,3 @@ func (mapIndexer mapIndexers) GetByKey(r string, key string) ([]interface{}, boo
 
 	return items, ok
 }
-

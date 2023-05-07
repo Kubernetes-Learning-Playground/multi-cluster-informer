@@ -19,22 +19,20 @@ import (
 
 // MultiClusterInformer 多集群informer的接口对象
 type MultiClusterInformer interface {
-
 	// 执行多集群的informer的方法
 	Run()
-
 	// 停止informer
 	Stop()
-
+	// 队列接口对象
 	queue
-
+	// 本地缓存接口对象
 	store
 }
 
 // 主要的控制器
 type controller struct {
 	// 多客户端 list
-	clients   []*kubernetes.Clientset
+	clients []*kubernetes.Clientset
 	// 多个informer list
 	informers informerList
 
@@ -52,8 +50,8 @@ var _ MultiClusterInformer = &controller{}
 // NewMultiClusterInformer 入参：最大重回对列次数、集群对象列表
 func NewMultiClusterInformer(maxReQueueTime int, clusters ...Cluster) (MultiClusterInformer, error) {
 	core := &controller{
-		queue:   newWorkQueue(maxReQueueTime),
-		stop:    make(chan struct{}, 1),
+		queue: newWorkQueue(maxReQueueTime),
+		stop:  make(chan struct{}, 1),
 	}
 
 	store := make(mapIndexers)
@@ -95,7 +93,6 @@ func NewMultiClusterInformer(maxReQueueTime int, clusters ...Cluster) (MultiClus
 
 				}
 
-
 			} else {
 
 				var indexer cache.Indexer
@@ -112,8 +109,6 @@ func NewMultiClusterInformer(maxReQueueTime int, clusters ...Cluster) (MultiClus
 
 			}
 
-
-
 		}
 	}
 
@@ -123,7 +118,7 @@ func NewMultiClusterInformer(maxReQueueTime int, clusters ...Cluster) (MultiClus
 	return core, nil
 }
 
-// 处理informer逻辑
+// initHandle 处理informer逻辑
 func initHandle(resource string, worker queue, clusterName string) cache.ResourceEventHandlerFuncs {
 	handler := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
@@ -136,7 +131,7 @@ func initHandle(resource string, worker queue, clusterName string) cache.Resourc
 			key, err := cache.MetaNamespaceKeyFunc(new)
 			if err == nil {
 				// 放入
-				worker.push(QueueObject{clusterName,EventUpdate, resource, key, time.Now()})
+				worker.push(QueueObject{clusterName, EventUpdate, resource, key, time.Now()})
 
 			}
 		},
@@ -144,19 +139,16 @@ func initHandle(resource string, worker queue, clusterName string) cache.Resourc
 
 			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err == nil {
-				worker.push(QueueObject{clusterName,EventDelete, resource, key, time.Now()})
+				worker.push(QueueObject{clusterName, EventDelete, resource, key, time.Now()})
 			}
 		},
 	}
 	return handler
 }
 
-
 func (c *controller) Run() {
 	defer c.queue.close()
-
 	c.informers.run(c.stop)
-
 	<-c.stop
 }
 
@@ -179,20 +171,20 @@ func (s informerList) run(done chan struct{}) {
 	}
 }
 
-// 资源与namespace
+// ResourceAndNamespace 资源与namespace
 type ResourceAndNamespace struct {
-	RType          string
-	Namespace      string
+	RType     string
+	Namespace string
 }
 
 // MetaData 集群对象所需的信息
 type MetaData struct {
-	List []ResourceAndNamespace
+	List        []ResourceAndNamespace
 	ClusterName string
 }
 
 // 构造informer需要的资源
-func (r *ResourceAndNamespace) createCoreV1IndexInformer(client *kubernetes.Clientset, worker queue, clusterName string) (indexer cache.Indexer, informer cache.Controller)  {
+func (r *ResourceAndNamespace) createCoreV1IndexInformer(client *kubernetes.Clientset, worker queue, clusterName string) (indexer cache.Indexer, informer cache.Controller) {
 	lw := cache.NewListWatchFromClient(client.CoreV1().RESTClient(), r.RType, r.Namespace, fields.Everything())
 	switch r.RType {
 	case Services:
@@ -206,7 +198,7 @@ func (r *ResourceAndNamespace) createCoreV1IndexInformer(client *kubernetes.Clie
 }
 
 // 构造informer需要的资源
-func (r *ResourceAndNamespace) createAppsV1IndexInformer(client *kubernetes.Clientset, worker queue, clusterName string) (indexer cache.Indexer, informer cache.Controller)  {
+func (r *ResourceAndNamespace) createAppsV1IndexInformer(client *kubernetes.Clientset, worker queue, clusterName string) (indexer cache.Indexer, informer cache.Controller) {
 	lw := cache.NewListWatchFromClient(client.AppsV1().RESTClient(), r.RType, r.Namespace, fields.Everything())
 	switch r.RType {
 	case Deployments:
@@ -216,7 +208,7 @@ func (r *ResourceAndNamespace) createAppsV1IndexInformer(client *kubernetes.Clie
 }
 
 // 创建选项是 all namespace时的解决方法
-func (r *ResourceAndNamespace) createAllCoreV1IndexInformer(client *kubernetes.Clientset, worker queue, clusterName string, isAll bool) ([]cache.Indexer , []cache.Controller, bool){
+func (r *ResourceAndNamespace) createAllCoreV1IndexInformer(client *kubernetes.Clientset, worker queue, clusterName string, isAll bool) ([]cache.Indexer, []cache.Controller, bool) {
 	// 1. 先查一下所有ns
 	nsList, err := client.CoreV1().Namespaces().List(context.Background(), v12.ListOptions{})
 	if err != nil {
@@ -244,18 +236,16 @@ func (r *ResourceAndNamespace) createAllCoreV1IndexInformer(client *kubernetes.C
 			indexerListRes = append(indexerListRes, indexer)
 		}
 
-
 	}
 
 	isAll = true
 
 	return indexerListRes, informerListRes, isAll
 
-
 }
 
 // 创建选项是 all namespace时的解决方法
-func (r *ResourceAndNamespace) createAllAppsV1IndexInformer(client *kubernetes.Clientset, worker queue, clusterName string, isAll bool) ([]cache.Indexer , []cache.Controller, bool){
+func (r *ResourceAndNamespace) createAllAppsV1IndexInformer(client *kubernetes.Clientset, worker queue, clusterName string, isAll bool) ([]cache.Indexer, []cache.Controller, bool) {
 	// 1. 先查一下所有ns
 	nsList, err := client.CoreV1().Namespaces().List(context.Background(), v12.ListOptions{})
 	if err != nil {
@@ -280,13 +270,12 @@ func (r *ResourceAndNamespace) createAllAppsV1IndexInformer(client *kubernetes.C
 
 	return indexerListRes, informerListRes, isAll
 
-
 }
 
 // Cluster 集群对象
 type Cluster struct {
-	ConfigPath      string // kube config文件
-	MetaData 		MetaData
+	ConfigPath string // kube config文件
+	MetaData   MetaData
 }
 
 // 初始化client
@@ -306,4 +295,3 @@ func (c *Cluster) newClient() (*kubernetes.Clientset, error) {
 	}
 	return nil, errors.New("无法找到集群client端")
 }
-

@@ -11,10 +11,11 @@ import (
 
 func main() {
 
+	// FIXME: 把输入改成配置文件
 	r, err := pkg.NewMultiClusterInformer(
 		5,
 		pkg.Cluster{
-			ConfigPath:"/Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config1",
+			ConfigPath: "/Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config1",
 			MetaData: pkg.MetaData{
 				ClusterName: "cluster1",
 				List: []pkg.ResourceAndNamespace{
@@ -23,11 +24,10 @@ func main() {
 					{pkg.Pods, "all"}, // 支持使用all 来监听所有命名空间的资源
 					{pkg.Deployments, "all"},
 				},
-
 			},
 		},
 		pkg.Cluster{
-			ConfigPath:"/Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config",
+			ConfigPath: "/Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config",
 			MetaData: pkg.MetaData{
 				ClusterName: "cluster2",
 				List: []pkg.ResourceAndNamespace{
@@ -35,7 +35,17 @@ func main() {
 					{pkg.ConfigMaps, "default"},
 					{pkg.Pods, "default"},
 				},
-
+			},
+		},
+		pkg.Cluster{
+			ConfigPath: "/Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config2",
+			MetaData: pkg.MetaData{
+				ClusterName: "cluster3",
+				List: []pkg.ResourceAndNamespace{
+					{pkg.Services, "default"},
+					{pkg.ConfigMaps, "default"},
+					{pkg.Pods, "default"},
+				},
 			},
 		},
 	)
@@ -54,7 +64,6 @@ func main() {
 		} else { // 完成就结束
 			r.Finish(obj)
 		}
-
 	}
 
 	go r.Stop()
@@ -76,4 +85,3 @@ func process(obj pkg.QueueObject) error {
 	fmt.Println(time.Now(), obj.Event, obj.ResourceType, obj.Key, obj.ClusterName)
 	return nil
 }
-
