@@ -3,6 +3,7 @@ package main
 import (
 	"k8s.io/klog/v2"
 	"multi_cluster_informer/pkg"
+	"multi_cluster_informer/pkg/config"
 	"time"
 
 	//"time"
@@ -10,52 +11,27 @@ import (
 )
 
 func main() {
+	// 1. 项目配置
+	sysConfig, err := config.LoadConfig("./pkg/config/config.yaml")
+	if err != nil {
+		klog.Error("load config error: ", err)
+		return
+	}
 
-	// FIXME: 把输入改成配置文件
+	// 2. 启动多集群informer
 	r, err := pkg.NewMultiClusterInformer(
-		5,
-		pkg.Cluster{
-			ConfigPath: "/Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config1",
-			MetaData: pkg.MetaData{
-				ClusterName: "cluster1",
-				List: []pkg.ResourceAndNamespace{
-					{pkg.Services, "default"},
-					{pkg.ConfigMaps, "default"},
-					{pkg.Pods, "all"}, // 支持使用all 来监听所有命名空间的资源
-					{pkg.Deployments, "all"},
-				},
-			},
-		},
-		pkg.Cluster{
-			ConfigPath: "/Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config",
-			MetaData: pkg.MetaData{
-				ClusterName: "cluster2",
-				List: []pkg.ResourceAndNamespace{
-					{pkg.Services, "default"},
-					{pkg.ConfigMaps, "default"},
-					{pkg.Pods, "default"},
-				},
-			},
-		},
-		pkg.Cluster{
-			ConfigPath: "/Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config2",
-			MetaData: pkg.MetaData{
-				ClusterName: "cluster3",
-				List: []pkg.ResourceAndNamespace{
-					{pkg.Services, "default"},
-					{pkg.ConfigMaps, "default"},
-					{pkg.Pods, "default"},
-				},
-			},
-		},
+		sysConfig.MaxReQueueTime,
+		sysConfig.Clusters,
 	)
 	if err != nil {
 		klog.Fatal("multi cluster informer err: ", err)
 	}
 
-	// 执行informer监听
+	// 3. 执行informer监听
 	go r.Run()
+	defer r.Stop()
 
+	// 4. 不断从队列取出资源对象
 	for {
 		obj, _ := r.Pop()
 		// 如果自己的业务逻辑发生问题，可以重新放回队列。
@@ -66,10 +42,9 @@ func main() {
 		}
 	}
 
-	go r.Stop()
 }
 
-// 执行自己的业务逻辑
+// process 执行自己的业务逻辑
 func process(obj pkg.QueueObject) error {
 
 	// 判断只有add事件

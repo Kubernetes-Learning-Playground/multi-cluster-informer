@@ -48,7 +48,7 @@ type controller struct {
 var _ MultiClusterInformer = &controller{}
 
 // NewMultiClusterInformer 入参：最大重回对列次数、集群对象列表
-func NewMultiClusterInformer(maxReQueueTime int, clusters ...Cluster) (MultiClusterInformer, error) {
+func NewMultiClusterInformer(maxReQueueTime int, clusters []Cluster) (MultiClusterInformer, error) {
 	core := &controller{
 		queue: newWorkQueue(maxReQueueTime),
 		stop:  make(chan struct{}, 1),
@@ -173,14 +173,14 @@ func (s informerList) run(done chan struct{}) {
 
 // ResourceAndNamespace 资源与namespace
 type ResourceAndNamespace struct {
-	RType     string
-	Namespace string
+	RType     string `json:"rtype", yaml:"rtype"`
+	Namespace string `json:"namespace", yaml:"namespace"`
 }
 
 // MetaData 集群对象所需的信息
 type MetaData struct {
-	List        []ResourceAndNamespace
-	ClusterName string
+	List        []ResourceAndNamespace `json:"list", yaml:"list"`
+	ClusterName string                 `json:"clustername", yaml:"clustername"`
 }
 
 // 构造informer需要的资源
@@ -274,8 +274,8 @@ func (r *ResourceAndNamespace) createAllAppsV1IndexInformer(client *kubernetes.C
 
 // Cluster 集群对象
 type Cluster struct {
-	ConfigPath string // kube config文件
-	MetaData   MetaData
+	ConfigPath string 	 `json:"configpath", yaml:"configpath"`		// kube config文件
+	MetaData   MetaData	 `json:"metadata", yaml:"metadata"`
 }
 
 // 初始化client

@@ -1,0 +1,22 @@
+maxrequeuetime: 5
+clusters:
+  - metadata:
+      list:
+        - rtype: pods
+          namespace: default
+        - rtype: deployments
+          namespace: default
+        - rtype: services
+          namespace: default
+      clustername: cluster1
+    configpath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config1
+  - metadata:
+      list:
+        - rtype: pods
+          namespace: default
+        - rtype: deployments
+          namespace: default
+        - rtype: services
+          namespace: default
+      clustername: cluster2
+    configpath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config

@@ -5,12 +5,16 @@ import (
 	"github.com/go-yaml/yaml"
 	"io/ioutil"
 	"log"
+	"multi_cluster_informer/pkg"
 )
 
 // TODO: 配置文件
 
-type Config struct {
+var SysConfig *Config
 
+type Config struct {
+	MaxReQueueTime int          `json:"maxrequeuetime", yaml:"maxrequeuetime"`
+	Clusters       []pkg.Cluster `json:"clusters", yaml"clusters"`
 }
 
 func NewConfig() *Config {
