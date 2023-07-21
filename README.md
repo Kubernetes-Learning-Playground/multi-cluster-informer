@@ -43,7 +43,7 @@ clusters:                     # 监听集群范围
 ```
 
 ### 使用范例
-```
+```go
 func main() {
 	// 1. 项目配置
 	sysConfig, err := config.LoadConfig("./pkg/config/config.yaml")
