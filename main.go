@@ -1,18 +1,25 @@
 package main
 
 import (
-	"k8s.io/klog/v2"
-	"multi_cluster_informer/pkg"
-	"multi_cluster_informer/pkg/config"
-	"time"
-
-	//"time"
+	"flag"
 	"fmt"
+	"github.com/practice/multi_cluster_informer/pkg"
+	"github.com/practice/multi_cluster_informer/pkg/config"
+	"k8s.io/klog/v2"
+	"time"
+)
+
+var (
+	cfg string // 配置文件
 )
 
 func main() {
+
+	flag.StringVar(&cfg, "config", "./config.yaml", "config yaml file")
+	flag.Parse()
+
 	// 1. 项目配置
-	sysConfig, err := config.LoadConfig("./pkg/config/config.yaml")
+	sysConfig, err := config.LoadConfig(cfg)
 	if err != nil {
 		klog.Error("load config error: ", err)
 		return

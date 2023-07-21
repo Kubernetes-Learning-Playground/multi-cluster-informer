@@ -4,17 +4,14 @@ import (
 	"context"
 	"errors"
 	appsv1 "k8s.io/api/apps/v1"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
-	"time"
-
 	v1 "k8s.io/api/core/v1"
-
+	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
+	"time"
 )
 
 // MultiClusterInformer 多集群informer的接口对象
@@ -274,8 +271,8 @@ func (r *ResourceAndNamespace) createAllAppsV1IndexInformer(client *kubernetes.C
 
 // Cluster 集群对象
 type Cluster struct {
-	ConfigPath string 	 `json:"configpath", yaml:"configpath"`		// kube config文件
-	MetaData   MetaData	 `json:"metadata", yaml:"metadata"`
+	ConfigPath string   `json:"configpath", yaml:"configpath"` // kube config文件
+	MetaData   MetaData `json:"metadata", yaml:"metadata"`
 }
 
 // 初始化client

@@ -1,5 +1,5 @@
-maxrequeuetime: 5
-clusters:
+maxrequeuetime: 5   # 最大重入队列次数
+clusters:           # 集群列表
   - metadata:
       list:
         - rtype: pods
