@@ -115,8 +115,6 @@ func main() {
     //}
 }
 
-}
-
 // process 执行自己的业务逻辑
 func process(obj queue.QueueObject) error {
 
