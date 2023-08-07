@@ -1,23 +1,23 @@
-package pkg
+package queue
 
 import (
 	"errors"
 	"k8s.io/client-go/util/workqueue"
 )
 
-// queue 接口对象
-type queue interface {
-	// 将监听到的资源放入queue中
-	push(QueueObject)
-	// 拿出队列
+// Queue 接口对象
+type Queue interface {
+	// Push 将监听到的资源放入queue中
+	Push(QueueObject)
+	// Pop 拿出队列
 	Pop() (QueueObject, error)
-	// 重新放入队列，次数可配置
+	// ReQueue 重新放入队列，次数可配置
 	ReQueue(QueueObject) error
-	// 完成入列操作
+	// Finish 完成入列操作
 	Finish(QueueObject)
-	// 关闭所有informer
-	close()
-	// 设置最大重新入列次数
+	// Close 关闭所有informer
+	Close()
+	// SetReMaxReQueueTime 设置最大重新入列次数
 	SetReMaxReQueueTime(int)
 }
 
@@ -27,17 +27,17 @@ type wq struct {
 	MaxReQueueTime int
 }
 
-var _ queue = &wq{}
+var _ Queue = &wq{}
 
-func newWorkQueue(maxReQueueTime int) *wq {
+func NewWorkQueue(maxReQueueTime int) *wq {
 	return &wq{
 		workqueue.NewRateLimitingQueue(workqueue.DefaultItemBasedRateLimiter()),
 		maxReQueueTime,
 	}
 }
 
-// push 放入队列
-func (c *wq) push(obj QueueObject) {
+// Push 放入队列
+func (c *wq) Push(obj QueueObject) {
 	c.AddRateLimited(obj)
 }
 
@@ -69,7 +69,7 @@ func (c *wq) ReQueue(obj QueueObject) error {
 	return errors.New("This object has been requeued for many times, but still fails. ")
 }
 
-func (c *wq) close() {
+func (c *wq) Close() {
 	c.ShutDown()
 }
 

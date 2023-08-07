@@ -1,7 +1,10 @@
-package pkg
+package queue
 
-import "time"
+import (
+	"time"
+)
 
+// 支持资源对象类型
 const (
 	All         = "all"
 	Services    = "services"
@@ -10,6 +13,7 @@ const (
 	ConfigMaps  = "configmaps"
 )
 
+// 事件类型
 const (
 	EventAdd    = "add"
 	EventUpdate = "update"

@@ -1,21 +1,24 @@
-package pkg
+package queue
 
 import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// 本地缓存 接口
-type store interface {
+// Store 本地缓存接口
+type Store interface {
+	// List 列出所有资源对象
 	List(string) []interface{}
+	// ListKeys 列出所有资源对象的key
 	ListKeys(string) []string
+	// GetByKey 输入特定key，返回资源对象
 	GetByKey(r string, key string) (items []interface{}, exists bool)
 }
 
-var _ store = mapIndexers{}
+var _ Store = MapIndexers{}
 
-type mapIndexers map[string][]cache.Indexer
+type MapIndexers map[string][]cache.Indexer
 
-func (mapIndexer mapIndexers) List(r string) (l []interface{}) {
+func (mapIndexer MapIndexers) List(r string) (l []interface{}) {
 	switch r {
 	case All:
 		for _, set := range mapIndexer {
@@ -43,7 +46,7 @@ func (mapIndexer mapIndexers) List(r string) (l []interface{}) {
 	return
 }
 
-func (mapIndexer mapIndexers) ListKeys(r string) (keys []string) {
+func (mapIndexer MapIndexers) ListKeys(r string) (keys []string) {
 	switch r {
 	case All:
 		for _, set := range mapIndexer {
@@ -72,7 +75,7 @@ func (mapIndexer mapIndexers) ListKeys(r string) (keys []string) {
 	return
 }
 
-func (mapIndexer mapIndexers) GetByKey(r string, key string) ([]interface{}, bool) {
+func (mapIndexer MapIndexers) GetByKey(r string, key string) ([]interface{}, bool) {
 	var items []interface{}
 	ok := false
 

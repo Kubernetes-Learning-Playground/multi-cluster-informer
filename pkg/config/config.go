@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/go-yaml/yaml"
-	"github.com/practice/multi_cluster_informer/pkg"
+	"github.com/practice/multi_cluster_informer/pkg/controller"
 	"io/ioutil"
 	"log"
 )
@@ -13,8 +13,8 @@ import (
 var SysConfig *Config
 
 type Config struct {
-	MaxReQueueTime int           `json:"maxrequeuetime", yaml:"maxrequeuetime"`
-	Clusters       []pkg.Cluster `json:"clusters", yaml"clusters"`
+	MaxReQueueTime int                  `json:"maxRequeueTime" yaml:"maxRequeueTime"`
+	Clusters       []controller.Cluster `json:"clusters" yaml:"clusters"`
 }
 
 func NewConfig() *Config {

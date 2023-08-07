@@ -2,21 +2,31 @@ maxrequeuetime: 5   # 最大重入队列次数
 clusters:           # 集群列表
   - metadata:
       list:
-        - rtype: pods
+        - rType: pods
           namespace: default
-        - rtype: deployments
+        - rType: deployments
           namespace: default
-        - rtype: services
+        - rType: services
           namespace: default
-      clustername: cluster1
-    configpath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config1
+      clusterName: cluster1
+    configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config1
   - metadata:
       list:
-        - rtype: pods
+        - rType: pods
           namespace: default
-        - rtype: deployments
+        - rType: deployments
           namespace: default
-        - rtype: services
+        - rType: services
           namespace: default
-      clustername: cluster2
-    configpath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config
+      clusterName: cluster2
+    configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config
+  - metadata:
+      list:
+        - rType: pods
+          namespace: default
+        - rType: deployments
+          namespace: default
+        - rType: services
+          namespace: default
+      clusterName: cluster3
+    configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config2

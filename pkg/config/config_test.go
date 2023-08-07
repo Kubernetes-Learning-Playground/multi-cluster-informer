@@ -6,8 +6,6 @@ import (
 	"testing"
 )
 
-var SysConfig *Config
-
 func TestLoadConfig(test *testing.T) {
 	// 1. 项目配置
 	sysConfig, err := LoadConfig("./config.yaml")
