@@ -1,7 +1,7 @@
 ## kubernetes的多集群多资源informer监听。
 ### 项目思路与功能
 项目背景：一般在kubernetes中的client-go的仅有单集群且单资源的监听demo，并且写的相对简陋。基于这个问题，本项目采用client-go包，实现"**多集群**"且"**多资源**"的
-informer机制。调用方顶仅需要维护config.yaml配置文件与handlerFunc即可。
+informer机制。调用方仅需要维护config.yaml配置文件与handlerFunc即可。
 
 支持功能：
 1. 可提供"多集群"informer。
