@@ -1,7 +1,7 @@
 ## kubernetes的多集群多资源informer监听。
 ### 项目思路与功能
 项目背景：一般在kubernetes中的client-go的仅有单集群且单资源的监听demo，并且写的相对简陋。基于这个问题，本项目采用client-go包，实现"**多集群**"且"**多资源**"的
-informer机制。
+informer机制。调用方顶仅需要维护config.yaml配置文件与handlerFunc即可。
 
 支持功能：
 1. 可提供"多集群"informer。
@@ -16,30 +16,24 @@ informer机制。
 3. 可以放置多个.kube/config配置文件，支持多集群list查询。
 
 ### 配置文件
+- **重要** 配置文件可参考config.yaml中配置，调用方只需要关注配置文件中的内容即可。
 ```yaml
-maxrequeuetime: 5             # 最大重试次数
-clusters:                     # 监听集群范围
+maxrequeuetime: 5             # 最大重入队列次数
+clusters:                     # 集群列表
   - metadata:
-      list:                   # 资源对象与namespace
-        - rtype: pods
+      clusterName: cluster1   # 自定义集群名
+      configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config2 # kube config配置文件地址
+      list:                   # 列表：目前支持：pods deployments services configmaps等资源对象的监听
+        - rType: pods         # 资源对象
+          namespace: all      # namespace：可支持特定namespace或all
+          objSave: false      # 支持informer实例返回runtime.Object对象，在多集群监听时，需要考虑内存问题，
+          # 如果没有特殊要求，可以设置为objSave
+        - rType: deployments
           namespace: default
-        - rtype: deployments
+          objSave: true
+        - rType: services
           namespace: default
-        - rtype: services
-          namespace: default
-      clustername: cluster1   # 集群名
-    # ./kube/config 的目录地址  
-    configpath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config1
-  - metadata:
-      list:
-        - rtype: pods
-          namespace: default
-        - rtype: deployments
-          namespace: default
-        - rtype: services
-          namespace: default
-      clustername: cluster2
-    configpath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config
+          objSave: true
 ```
 
 ### 使用范例

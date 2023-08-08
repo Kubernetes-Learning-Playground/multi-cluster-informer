@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/practice/multi_cluster_informer/pkg"
 	"github.com/practice/multi_cluster_informer/pkg/queue"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	"time"
 )
@@ -33,7 +34,6 @@ func main() {
 	// klog.Fatal("multi cluster informer err: ", err)
 	//}
 
-
 	// 推荐如下方式，调用者只需要关心配置文件中的设置即可
 	// 1. 获取控制器对象
 	r, err := multi_informer.NewMultiClusterInformerFromConfig("./config.yaml")
@@ -57,6 +57,12 @@ func main() {
 		}
 
 		fmt.Println(time.Now(), object.Event, object.ResourceType, object.Key, object.ClusterName)
+		if object.ResourceType == queue.Pods {
+			if object.Obj != nil {
+				pp := object.Obj.(*v1.Pod)
+				fmt.Println("名字！！", pp.Name)
+			}
+		}
 		return nil
 	})
 

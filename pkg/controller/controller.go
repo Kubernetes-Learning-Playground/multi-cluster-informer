@@ -34,37 +34,45 @@ type MultiClusterInformer interface {
 // Controller 控制器
 // 主要保存所有集群的客户端实例，并保存
 type Controller struct {
-	// 多客户端 list
+	// clients 多客户端 list
 	clients []*kubernetes.Clientset
-	// 多个informer list
+	// Informers 多个informer list
 	Informers InformerList
-
-	StopC chan struct{}
-
+	// HandleFunc 统一的handle方法
 	HandleFunc HandleFunc
-	// 一个工作队列: 多集群的所有资源都会放入此队列
+	// Queue 一个工作队列: 多集群的所有资源都会放入此队列
 	queue.Queue
-	// 一个本地缓存：多集群的所有资源都会放入此缓存
+	// Store 一个本地缓存：多集群的所有资源都会放入此缓存
 	queue.Store
+	// stop chan
+	StopC chan struct{}
 }
 
 // 是否实现MultiClusterInformer接口
 var _ MultiClusterInformer = &Controller{}
 
 // initHandle 处理informer逻辑
-func initHandle(resource string, worker queue.Queue, clusterName string) cache.ResourceEventHandlerFuncs {
+func initHandle(resource string, worker queue.Queue, clusterName string, isObjSave bool) cache.ResourceEventHandlerFuncs {
 	handler := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err == nil {
-				worker.Push(queue.QueueObject{ClusterName: clusterName, Event: queue.EventAdd, ResourceType: resource, Key: key, CreateAt: time.Now()})
+				qo := queue.QueueObject{ClusterName: clusterName, Event: queue.EventAdd, ResourceType: resource, Key: key, CreateAt: time.Now()}
+				if isObjSave {
+					qo.Obj = obj
+				}
+				worker.Push(qo)
 			}
 		},
 		UpdateFunc: func(old interface{}, new interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(new)
 			if err == nil {
+				qo := queue.QueueObject{ClusterName: clusterName, Event: queue.EventUpdate, ResourceType: resource, Key: key, CreateAt: time.Now()}
+				if isObjSave {
+					qo.Obj = new
+				}
 				// 放入
-				worker.Push(queue.QueueObject{ClusterName: clusterName, Event: queue.EventUpdate, ResourceType: resource, Key: key, CreateAt: time.Now()})
+				worker.Push(qo)
 
 			}
 		},
@@ -72,7 +80,11 @@ func initHandle(resource string, worker queue.Queue, clusterName string) cache.R
 
 			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err == nil {
-				worker.Push(queue.QueueObject{ClusterName: clusterName, Event: queue.EventDelete, ResourceType: resource, Key: key, CreateAt: time.Now()})
+				qo := queue.QueueObject{ClusterName: clusterName, Event: queue.EventDelete, ResourceType: resource, Key: key, CreateAt: time.Now()}
+				if isObjSave {
+					qo.Obj = obj
+				}
+				worker.Push(qo)
 			}
 		},
 	}
@@ -123,11 +135,13 @@ func (s InformerList) run(done chan struct{}) {
 type ResourceAndNamespace struct {
 	RType     string `json:"rType" yaml:"rType"`
 	Namespace string `json:"namespace" yaml:"namespace"`
+	ObjSave   bool   `json:"objSave" yaml:"objSave"`
 }
 
 // MetaData 集群对象所需的信息
 type MetaData struct {
 	List        []ResourceAndNamespace `json:"list"cyaml:"list"`
+	ConfigPath  string                 `json:"configPath" yaml:"configPath"` // kube config文件
 	ClusterName string                 `json:"clusterName" yaml:"clusterName"`
 }
 
@@ -136,11 +150,11 @@ func (r *ResourceAndNamespace) CreateCoreV1IndexInformer(client *kubernetes.Clie
 	lw := cache.NewListWatchFromClient(client.CoreV1().RESTClient(), r.RType, r.Namespace, fields.Everything())
 	switch r.RType {
 	case queue.Services:
-		indexer, informer = cache.NewIndexerInformer(lw, &v1.Service{}, 0, initHandle(queue.Services, worker, clusterName), cache.Indexers{})
+		indexer, informer = cache.NewIndexerInformer(lw, &v1.Service{}, 0, initHandle(queue.Services, worker, clusterName, r.ObjSave), cache.Indexers{})
 	case queue.Pods:
-		indexer, informer = cache.NewIndexerInformer(lw, &v1.Pod{}, 0, initHandle(queue.Pods, worker, clusterName), cache.Indexers{})
+		indexer, informer = cache.NewIndexerInformer(lw, &v1.Pod{}, 0, initHandle(queue.Pods, worker, clusterName, r.ObjSave), cache.Indexers{})
 	case queue.ConfigMaps:
-		indexer, informer = cache.NewIndexerInformer(lw, &v1.ConfigMap{}, 0, initHandle(queue.ConfigMaps, worker, clusterName), cache.Indexers{})
+		indexer, informer = cache.NewIndexerInformer(lw, &v1.ConfigMap{}, 0, initHandle(queue.ConfigMaps, worker, clusterName, r.ObjSave), cache.Indexers{})
 	}
 	return
 }
@@ -150,7 +164,7 @@ func (r *ResourceAndNamespace) CreateAppsV1IndexInformer(client *kubernetes.Clie
 	lw := cache.NewListWatchFromClient(client.AppsV1().RESTClient(), r.RType, r.Namespace, fields.Everything())
 	switch r.RType {
 	case queue.Deployments:
-		indexer, informer = cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Deployments, worker, clusterName), cache.Indexers{})
+		indexer, informer = cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Deployments, worker, clusterName, r.ObjSave), cache.Indexers{})
 	}
 	return
 }
@@ -171,15 +185,15 @@ func (r *ResourceAndNamespace) CreateAllCoreV1IndexInformer(client *kubernetes.C
 		lw := cache.NewListWatchFromClient(client.CoreV1().RESTClient(), r.RType, v.Namespace, fields.Everything())
 		switch r.RType {
 		case queue.Services:
-			indexer, informer := cache.NewIndexerInformer(lw, &v1.Service{}, 0, initHandle(queue.Services, worker, clusterName), cache.Indexers{})
+			indexer, informer := cache.NewIndexerInformer(lw, &v1.Service{}, 0, initHandle(queue.Services, worker, clusterName, r.ObjSave), cache.Indexers{})
 			informerListRes = append(informerListRes, informer)
 			indexerListRes = append(indexerListRes, indexer)
 		case queue.Pods:
-			indexer, informer := cache.NewIndexerInformer(lw, &v1.Pod{}, 0, initHandle(queue.Pods, worker, clusterName), cache.Indexers{})
+			indexer, informer := cache.NewIndexerInformer(lw, &v1.Pod{}, 0, initHandle(queue.Pods, worker, clusterName, r.ObjSave), cache.Indexers{})
 			informerListRes = append(informerListRes, informer)
 			indexerListRes = append(indexerListRes, indexer)
 		case queue.ConfigMaps:
-			indexer, informer := cache.NewIndexerInformer(lw, &v1.ConfigMap{}, 0, initHandle(queue.ConfigMaps, worker, clusterName), cache.Indexers{})
+			indexer, informer := cache.NewIndexerInformer(lw, &v1.ConfigMap{}, 0, initHandle(queue.ConfigMaps, worker, clusterName, r.ObjSave), cache.Indexers{})
 			informerListRes = append(informerListRes, informer)
 			indexerListRes = append(indexerListRes, indexer)
 		}
@@ -208,7 +222,7 @@ func (r *ResourceAndNamespace) CreateAllAppsV1IndexInformer(client *kubernetes.C
 		lw := cache.NewListWatchFromClient(client.AppsV1().RESTClient(), r.RType, v.Namespace, fields.Everything())
 		switch r.RType {
 		case queue.Deployments:
-			indexer, informer := cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Deployments, worker, clusterName), cache.Indexers{})
+			indexer, informer := cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Deployments, worker, clusterName, r.ObjSave), cache.Indexers{})
 			informerListRes = append(informerListRes, informer)
 			indexerListRes = append(indexerListRes, indexer)
 		}
@@ -222,15 +236,14 @@ func (r *ResourceAndNamespace) CreateAllAppsV1IndexInformer(client *kubernetes.C
 
 // Cluster 集群对象
 type Cluster struct {
-	ConfigPath string   `json:"configPath" yaml:"configPath"` // kube config文件
-	MetaData   MetaData `json:"metadata" yaml:"metadata"`
+	MetaData MetaData `json:"metadata" yaml:"metadata"`
 }
 
 // NewClient 初始化client
 func (c *Cluster) NewClient() (*kubernetes.Clientset, error) {
 
-	if c.ConfigPath != "" {
-		config, err := clientcmd.BuildConfigFromFlags("", c.ConfigPath)
+	if c.MetaData.ConfigPath != "" {
+		config, err := clientcmd.BuildConfigFromFlags("", c.MetaData.ConfigPath)
 		config.Insecure = true
 		if err != nil {
 			return nil, err

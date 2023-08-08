@@ -1,32 +1,42 @@
-maxrequeuetime: 5   # 最大重入队列次数
-clusters:           # 集群列表
+maxrequeuetime: 5             # 最大重入队列次数
+clusters:                     # 集群列表
   - metadata:
-      list:
-        - rType: pods
-          namespace: default
+      clusterName: cluster1   # 自定义集群名
+      configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config2 # kube config配置文件地址
+      list:                   # 列表：目前支持：pods deployments services configmaps等资源对象的监听
+        - rType: pods         # 资源对象
+          namespace: all      # namespace：可支持特定namespace或all
+          objSave: false      # 支持informer实例返回runtime.Object对象，在多集群监听时，需要考虑内存问题，
+                              # 如果没有特殊要求，可以设置为objSave
         - rType: deployments
           namespace: default
+          objSave: true
         - rType: services
           namespace: default
-      clusterName: cluster1
-    configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config1
+          objSave: true
   - metadata:
-      list:
-        - rType: pods
-          namespace: default
-        - rType: deployments
-          namespace: default
-        - rType: services
-          namespace: default
       clusterName: cluster2
-    configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config
-  - metadata:
+      configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config1
       list:
         - rType: pods
-          namespace: default
+          namespace: all
+          objSave: false
         - rType: deployments
           namespace: default
+          objSave: true
         - rType: services
           namespace: default
+          objSave: true
+  - metadata:
       clusterName: cluster3
-    configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config2
+      configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config
+      list:
+        - rType: pods
+          namespace: all
+          objSave: false
+        - rType: deployments
+          namespace: default
+          objSave: true
+        - rType: services
+          namespace: default
+          objSave: true
