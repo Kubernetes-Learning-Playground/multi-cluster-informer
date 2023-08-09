@@ -22,6 +22,7 @@ maxrequeuetime: 5             # 最大重入队列次数
 clusters:                     # 集群列表
   - metadata:
       clusterName: cluster1   # 自定义集群名
+      insecure: true          # 是否开启跳过tls证书认证
       configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config2 # kube config配置文件地址
       list:                   # 列表：目前支持：pods deployments services configmaps等资源对象的监听
         - rType: pods         # 资源对象

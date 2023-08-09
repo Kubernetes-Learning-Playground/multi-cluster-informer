@@ -27,6 +27,6 @@ type QueueObject struct {
 	Event        string // 事件对象
 	ResourceType string // 资源类型
 	Key          string // <namespace>/<name>
-	Obj          interface{}
+	Obj          interface{}	// runtime.Object
 	CreateAt     time.Time // 创建时间，也可以记录更新次数 与 更新时间
 }

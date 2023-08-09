@@ -52,6 +52,7 @@ type Controller struct {
 var _ MultiClusterInformer = &Controller{}
 
 // initHandle 处理informer逻辑
+// 执行的逻辑：当监听到新增、修改、删除事件时，放入工作队列中
 func initHandle(resource string, worker queue.Queue, clusterName string, isObjSave bool) cache.ResourceEventHandlerFuncs {
 	handler := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
@@ -93,6 +94,7 @@ func initHandle(resource string, worker queue.Queue, clusterName string, isObjSa
 
 // Run 执行informer
 func (c *Controller) Run() {
+	klog.Info("run controller...")
 	defer c.Queue.Close()
 	c.Informers.run(c.StopC)
 	<-c.StopC
@@ -140,8 +142,9 @@ type ResourceAndNamespace struct {
 
 // MetaData 集群对象所需的信息
 type MetaData struct {
-	List        []ResourceAndNamespace `json:"list"cyaml:"list"`
+	List        []ResourceAndNamespace `json:"list" yaml:"list"`
 	ConfigPath  string                 `json:"configPath" yaml:"configPath"` // kube config文件
+	Insecure    bool                   `json:"insecure" yaml:"insecure"`     // 是否跳过证书认证
 	ClusterName string                 `json:"clusterName" yaml:"clusterName"`
 }
 
@@ -181,7 +184,7 @@ func (r *ResourceAndNamespace) CreateAllCoreV1IndexInformer(client *kubernetes.C
 	var informerListRes = make([]cache.Controller, 0)
 	// 让所有ns都初始化indexers informer
 	for _, v := range nsList.Items {
-		klog.Info("namespace: ", v.Name, v.Namespace)
+		klog.Infof("informer all [%v] namespace, namespace: [%v]", r.RType, v.Name)
 		lw := cache.NewListWatchFromClient(client.CoreV1().RESTClient(), r.RType, v.Namespace, fields.Everything())
 		switch r.RType {
 		case queue.Services:
@@ -218,7 +221,7 @@ func (r *ResourceAndNamespace) CreateAllAppsV1IndexInformer(client *kubernetes.C
 	var informerListRes = make([]cache.Controller, 0)
 	// 让所有ns都初始化indexers informer
 	for _, v := range nsList.Items {
-		klog.Info("namespace: ", v.Name, v.Namespace)
+		klog.Infof("informer all [%v] namespace, namespace: [%v]", r.RType, v.Name)
 		lw := cache.NewListWatchFromClient(client.AppsV1().RESTClient(), r.RType, v.Namespace, fields.Everything())
 		switch r.RType {
 		case queue.Deployments:
@@ -244,10 +247,10 @@ func (c *Cluster) NewClient() (*kubernetes.Clientset, error) {
 
 	if c.MetaData.ConfigPath != "" {
 		config, err := clientcmd.BuildConfigFromFlags("", c.MetaData.ConfigPath)
-		config.Insecure = true
 		if err != nil {
 			return nil, err
 		}
+		config.Insecure = c.MetaData.Insecure
 		clientset, err := kubernetes.NewForConfig(config)
 		if err != nil {
 			return nil, err
