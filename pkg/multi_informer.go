@@ -44,7 +44,7 @@ func NewMultiClusterInformer(maxReQueueTime int, clusters []controller.Cluster) 
 			if r.Namespace == queue.All {
 				if r.RType == queue.Deployments {
 
-					indexerListRes, informerListRes, isAll := r.CreateAllAppsV1IndexInformer(client, core.Queue, c.MetaData.ClusterName, false)
+					indexerListRes, informerListRes, isAll := r.CreateAllAppsV1IndexInformer(client, core.Queue, c.MetaData.ClusterName, true)
 
 					// 全部放入
 					if isAll == true {
@@ -56,7 +56,7 @@ func NewMultiClusterInformer(maxReQueueTime int, clusters []controller.Cluster) 
 
 				} else {
 
-					indexerListRes, informerListRes, isAll := r.CreateAllCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName, false)
+					indexerListRes, informerListRes, isAll := r.CreateAllCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName, true)
 
 					if isAll == true {
 						for k, v := range indexerListRes {

@@ -1,19 +1,21 @@
 ## kubernetes的多集群多资源informer监听。
 ### 项目思路与功能
-项目背景：一般在kubernetes中的client-go的仅有单集群且单资源的监听demo，并且写的相对简陋。基于这个问题，本项目采用client-go包，实现"**多集群**"且"**多资源**"的
+项目背景：一般在kubernetes中的client-go的仅有单集群且单资源的监听demo，并且写的相对简陋。基于这个问题，本项目采用client-go包进行扩展封装，实现"**多集群**"且"**多资源**"的
 informer机制。调用方仅需要维护config.yaml配置文件与handlerFunc即可。
 
 支持功能：
-1. 可提供"多集群"informer。
-2. 可提供多资源informer，目前只支持pods、services、configmaps、deployments等。
+1. 可提供"多集群"informer配置。
+2. 可提供多资源informer，目前只支持pods、services、configmaps、deployments、events等。
 3. 可支持在配置namespace时，使用all字段来监听所有namespace的特定资源。
+4. 可支持跳过tls认证过程直接调用informer
+5. 可支持回传监听到资源对象的runtime.Object实例
 
 ![](https://github.com/googs1025/multi-cluster-informer/blob/main/image/%E6%B5%81%E7%A8%8B%E5%9B%BE.jpg?raw=true)
 
 ### 附注：
 1. 目录下创建一个resource文件，把集群的.kube/config文件复制一份放入(记得cluster server需要改成"公网ip")。
-2. 本项目使用insecurity模式，所以config文件需要把certificate-authority-data字段删除，否则连接会报错。
-3. 可以放置多个.kube/config配置文件，支持多集群list查询。
+2. 本项目支持insecurity模式，所以config文件需要把certificate-authority-data字段删除，否则连接会报错(本身支持tls证书也可以不删除)。
+3. 可配置多个.kube/config配置文件，支持多集群list查询。
 
 ### 配置文件
 - **重要** 配置文件可参考config.yaml中配置，调用方只需要关注配置文件中的内容即可。
@@ -24,7 +26,7 @@ clusters:                     # 集群列表
       clusterName: cluster1   # 自定义集群名
       insecure: true          # 是否开启跳过tls证书认证
       configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config2 # kube config配置文件地址
-      list:                   # 列表：目前支持：pods deployments services configmaps等资源对象的监听
+      list:                   # 列表：目前支持：pods deployments services configmaps events等资源对象的监听
         - rType: pods         # 资源对象
           namespace: all      # namespace：可支持特定namespace或all
           objSave: false      # 支持informer实例返回runtime.Object对象，在多集群监听时，需要考虑内存问题，

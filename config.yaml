@@ -12,7 +12,7 @@ clusters:                     # 集群列表
         - rType: deployments
           namespace: default
           objSave: true
-        - rType: services
+        - rType: events
           namespace: default
           objSave: true
   - metadata:

@@ -111,6 +111,7 @@ func (c *Controller) AddEventHandler(handler HandleFunc) {
 	c.HandleFunc = handler
 }
 
+// HandleObject 自定义回调方法
 func (c *Controller) HandleObject(obj queue.QueueObject) error {
 	if c.HandleFunc != nil {
 		err := c.HandleFunc(obj)
@@ -158,6 +159,8 @@ func (r *ResourceAndNamespace) CreateCoreV1IndexInformer(client *kubernetes.Clie
 		indexer, informer = cache.NewIndexerInformer(lw, &v1.Pod{}, 0, initHandle(queue.Pods, worker, clusterName, r.ObjSave), cache.Indexers{})
 	case queue.ConfigMaps:
 		indexer, informer = cache.NewIndexerInformer(lw, &v1.ConfigMap{}, 0, initHandle(queue.ConfigMaps, worker, clusterName, r.ObjSave), cache.Indexers{})
+	case queue.Events:
+		indexer, informer = cache.NewIndexerInformer(lw, &v1.Event{}, 0, initHandle(queue.Events, worker, clusterName, r.ObjSave), cache.Indexers{})
 	}
 	return
 }
@@ -199,11 +202,13 @@ func (r *ResourceAndNamespace) CreateAllCoreV1IndexInformer(client *kubernetes.C
 			indexer, informer := cache.NewIndexerInformer(lw, &v1.ConfigMap{}, 0, initHandle(queue.ConfigMaps, worker, clusterName, r.ObjSave), cache.Indexers{})
 			informerListRes = append(informerListRes, informer)
 			indexerListRes = append(indexerListRes, indexer)
+		case queue.Events:
+			indexer, informer := cache.NewIndexerInformer(lw, &v1.Event{}, 0, initHandle(queue.Events, worker, clusterName, r.ObjSave), cache.Indexers{})
+			informerListRes = append(informerListRes, informer)
+			indexerListRes = append(indexerListRes, indexer)
 		}
 
 	}
-
-	isAll = true
 
 	return indexerListRes, informerListRes, isAll
 
@@ -230,8 +235,6 @@ func (r *ResourceAndNamespace) CreateAllAppsV1IndexInformer(client *kubernetes.C
 			indexerListRes = append(indexerListRes, indexer)
 		}
 	}
-
-	isAll = true
 
 	return indexerListRes, informerListRes, isAll
 
