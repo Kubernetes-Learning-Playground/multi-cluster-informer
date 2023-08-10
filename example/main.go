@@ -9,9 +9,6 @@ import (
 	"time"
 )
 
-var (
-	cfg string // 配置文件
-)
 
 func main() {
 
