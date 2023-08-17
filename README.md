@@ -10,7 +10,7 @@ informer机制。调用方仅需要维护config.yaml配置文件与handlerFunc�
 4. 可支持跳过tls认证过程直接调用informer
 5. 可支持回传监听到资源对象的runtime.Object实例
 
-![](https://github.com/googs1025/multi-cluster-informer/blob/main/image/%E6%B5%81%E7%A8%8B%E5%9B%BE.jpg?raw=true)
+![](https://github.com/Kubernetes-Learning-Playground/multi-cluster-informer/blob/main/image/%E6%97%A0%E6%A0%87%E9%A2%98-2023-08-10-2343.png?raw=true)
 
 ### 附注：
 1. 目录下创建一个resource文件，把集群的.kube/config文件复制一份放入(记得cluster server需要改成"公网ip")。
