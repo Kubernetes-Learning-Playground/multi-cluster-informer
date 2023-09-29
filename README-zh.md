@@ -1,27 +1,24 @@
-## Multi-cluster informer for kubernetes
-<a href="./README.md">English</a> | <a href="./README-zh.md">简体中文</a>
-### Introduction
-Project background: Generally, client-go in kubernetes only has a single-cluster and single-resource monitoring demo, and the writing is relatively simple. Based on this problem, this project uses the client-go package for extended encapsulation to achieve "**multiple clusters**" and "**multiple resources**"
-informer mechanism. 
+## kubernetes的多集群多资源informer监听。
+### 项目思路与功能
+项目背景：一般在kubernetes中的client-go的仅有单集群且单资源的监听demo，并且写的相对简陋。基于这个问题，本项目采用client-go包进行扩展封装，实现"**多集群**"且"**多资源**"的
+informer机制。调用方仅需要维护config.yaml配置文件与handlerFunc即可。
 
-The caller only needs to maintain the config.yaml configuration file and handlerFunc.
-
-Supported:
-1. "Multi-cluster" informer configuration can be provided.
-2. Can provide multi-resource informer, currently only supports pods, services, configmaps, deployments, events, etc.
-3. Supports using the all field to monitor specific resources of all namespaces when configuring a namespace.
-4. Can support skipping the TLS authentication process and calling informer directly.
-5. Supports callback to listen to the runtime.Object instance of the resource object.
+支持功能：
+1. 可提供"多集群"informer配置。
+2. 可提供多资源informer，目前只支持pods、services、configmaps、deployments、events等。
+3. 可支持在配置namespace时，使用all字段来监听所有namespace的特定资源。
+4. 可支持跳过tls认证过程直接调用informer
+5. 可支持回传监听到资源对象的runtime.Object实例
 
 ![](https://github.com/Kubernetes-Learning-Playground/multi-cluster-informer/blob/main/image/%E6%97%A0%E6%A0%87%E9%A2%98-2023-08-10-2343.png?raw=true)
 
-### P.S.:
-1. Create a resource file in the directory, copy the cluster's .kube/config file and put it in the project root directory (remember that the cluster server needs to be changed to "public network ip").
-2. This project supports insecurity mode, so the certificate-authority-data field needs to be deleted in the config file, otherwise the connection will report an error (it does not need to delete it if it supports TLS certificate).
-3. Multiple .kube/config configuration files can be configured to support multi-cluster list query.
+### 附注：
+1. 目录下创建一个resource文件，把集群的.kube/config文件复制一份放入(记得cluster server需要改成"公网ip")。
+2. 本项目支持insecurity模式，所以config文件需要把certificate-authority-data字段删除，否则连接会报错(本身支持tls证书也可以不删除)。
+3. 可配置多个.kube/config配置文件，支持多集群list查询。
 
-### Configuration file
-- **Important** The configuration file can refer to the configuration in config.yaml. The caller only needs to pay attention to the content in the configuration file.
+### 配置文件
+- **重要** 配置文件可参考config.yaml中配置，调用方只需要关注配置文件中的内容即可。
 ```yaml
 maxrequeuetime: 5             # 最大重入队列次数
 clusters:                     # 集群列表
@@ -42,7 +39,7 @@ clusters:                     # 集群列表
           objSave: true
 ```
 
-### Usage examples
+### 使用范例
 ```go
 func main() {
 
@@ -66,20 +63,20 @@ func main() {
     //}
     
     
-    // The following method is recommended. The caller only needs to care about the settings in the configuration file.
-    // 1. Get controller object
+    // 推荐如下方式，调用者只需要关心配置文件中的设置即可
+    // 1. 获取控制器对象
     r, err := multi_informer.NewMultiClusterInformerFromConfig("./config.yaml")
     if err != nil {
         klog.Fatal("multi cluster informer err: ", err)
     }
-    // 2. add handler
+    // 2. 加入handler
     r.AddEventHandler(func(object queue.QueueObject) error {
-        // only the add event
+        // 判断只有add事件
         if object.Event == queue.EventAdd {
             fmt.Println("目前监听到事件为add的资源对象", object.ResourceType)
         }
         //fmt.Println("目前监听到的资源对象", obj.ResourceType, obj.Event)
-       
+        //// 判断只有cluster2集群的事件
         if object.ClusterName == "cluster1" {
             fmt.Println("目前监听到集群为cluster1的资源对象", object.ResourceType)
         }
@@ -92,24 +89,22 @@ func main() {
         return nil
     })
     
-    // 3. run informer
+    // 3. 执行informer监听
     go r.Run()
     defer r.Stop()
 
-    // 4. Continuously remove resource objects from the queue
+    // 4. 不断从队列取出资源对象
     for {
         obj, _ := r.Pop()
-        // method one：use handler
-        // If there is a problem with your own logic, 
-		// you can put it back in the queue.
+        // 方法一：使用handler
+        // 如果自己的业务逻辑发生问题，可以重新放回队列。
         if err = r.HandleObject(obj); err != nil {
-            _ = r.ReQueue(obj)  // reQueue
-        } else { 
-			// t's done
+            _ = r.ReQueue(obj) // 重新入列
+        } else { // 完成就结束
             r.Finish(obj)
     }
 
-    // method two：Handle it yourself
+    // 方法二：自行处理
     //if err = process(obj); err != nil {
         // _ = r.ReQueue(obj) // 重新入列
     //} else { // 完成就结束
@@ -117,13 +112,15 @@ func main() {
     //}
 }
 
-// process execute your own logic
+// process 执行自己的业务逻辑
 func process(obj queue.QueueObject) error {
-	
+
+    // 判断只有add事件
     if obj.Event == queue.EventAdd {
         fmt.Println("目前监听到事件为add的资源对象", obj.ResourceType)
     }
-    
+    //fmt.Println("目前监听到的资源对象", obj.ResourceType, obj.Event)
+    //// 判断只有cluster2集群的事件
     if obj.ClusterName == "cluster2" {
         fmt.Println("目前监听到集群为cluster2的资源对象", obj.ResourceType)
     }
