@@ -38,8 +38,24 @@ func (mapIndexer MapIndexers) List(r string) (l []interface{}) {
 		for _, indexer := range mapIndexer[ConfigMaps] {
 			l = append(l, indexer.List()...)
 		}
+	case Events:
+		for _, indexer := range mapIndexer[Events] {
+			l = append(l, indexer.List()...)
+		}
 	case Deployments:
 		for _, indexer := range mapIndexer[Deployments] {
+			l = append(l, indexer.List()...)
+		}
+	case Statefulsets:
+		for _, indexer := range mapIndexer[Statefulsets] {
+			l = append(l, indexer.List()...)
+		}
+	case Daemonsets:
+		for _, indexer := range mapIndexer[Daemonsets] {
+			l = append(l, indexer.List()...)
+		}
+	case Secrets:
+		for _, indexer := range mapIndexer[Secrets] {
 			l = append(l, indexer.List()...)
 		}
 	}
@@ -65,6 +81,10 @@ func (mapIndexer MapIndexers) ListKeys(r string) (keys []string) {
 		}
 	case ConfigMaps:
 		for _, indexer := range mapIndexer[ConfigMaps] {
+			keys = append(keys, indexer.ListKeys()...)
+		}
+	case Events:
+		for _, indexer := range mapIndexer[Events] {
 			keys = append(keys, indexer.ListKeys()...)
 		}
 	case Deployments:
@@ -176,6 +196,17 @@ func (mapIndexer MapIndexers) GetByKey(r string, key string) ([]interface{}, boo
 		}
 	case Secrets:
 		for _, indexer := range mapIndexer[Secrets] {
+			item, exists, err := indexer.GetByKey(key)
+			if err != nil {
+				continue
+			}
+			if exists {
+				ok = true
+				items = append(items, item)
+			}
+		}
+	case Events:
+		for _, indexer := range mapIndexer[Events] {
 			item, exists, err := indexer.GetByKey(key)
 			if err != nil {
 				continue

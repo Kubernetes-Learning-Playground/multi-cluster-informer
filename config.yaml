@@ -4,22 +4,22 @@ clusters:                     # 集群列表
       clusterName: cluster1   # 自定义集群名
       insecure: true          # 是否开启跳过tls证书认证
       configPath: /Users/zhenyu.jiang/go/src/golanglearning/new_project/multi_cluster_informer/resource/config2 # kube config配置文件地址
-      list:                   # 列表：目前支持：pods deployments services configmaps等资源对象的监听
+      list:                   # 列表：目前支持：pods services configmaps secrets 等资源对象的监听
         - rType: pods         # 资源对象
           namespace: all      # namespace：可支持特定namespace或all
           objSave: false      # 支持informer实例返回runtime.Object对象，在多集群监听时，需要考虑内存问题，
                               # 如果没有特殊要求，可以设置为objSave
         - rType: deployments
-          namespace: default
+          namespace: all
           objSave: true
         - rType: events
-          namespace: default
+          namespace: all
           objSave: true
         - rType: secrets
-          namespace: default
+          namespace: all
           objSave: true
         - rType: statefulsets
-          namespace: default
+          namespace: all
           objSave: true
   - metadata:
       clusterName: cluster2
@@ -30,10 +30,10 @@ clusters:                     # 集群列表
           namespace: all
           objSave: false
         - rType: deployments
-          namespace: default
+          namespace: all
           objSave: true
         - rType: services
-          namespace: default
+          namespace: all
           objSave: true
   - metadata:
       clusterName: cluster3
@@ -44,8 +44,14 @@ clusters:                     # 集群列表
           namespace: all
           objSave: false
         - rType: deployments
-          namespace: default
+          namespace: all
           objSave: true
         - rType: services
-          namespace: default
+          namespace: all
+          objSave: true
+        - rType: daemonsets
+          namespace: all
+          objSave: true
+        - rType: statefulsets
+          namespace: all
           objSave: true

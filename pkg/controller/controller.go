@@ -174,9 +174,9 @@ func (r *ResourceAndNamespace) CreateAppsV1IndexInformer(client *kubernetes.Clie
 	case queue.Deployments:
 		indexer, informer = cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Deployments, worker, clusterName, r.ObjSave), cache.Indexers{})
 	case queue.Statefulsets:
-		indexer, informer = cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Deployments, worker, clusterName, r.ObjSave), cache.Indexers{})
+		indexer, informer = cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Statefulsets, worker, clusterName, r.ObjSave), cache.Indexers{})
 	case queue.Daemonsets:
-		indexer, informer = cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Deployments, worker, clusterName, r.ObjSave), cache.Indexers{})
+		indexer, informer = cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Daemonsets, worker, clusterName, r.ObjSave), cache.Indexers{})
 	}
 	return
 }
@@ -212,6 +212,10 @@ func (r *ResourceAndNamespace) CreateAllCoreV1IndexInformer(client *kubernetes.C
 			indexer, informer := cache.NewIndexerInformer(lw, &v1.Event{}, 0, initHandle(queue.Events, worker, clusterName, r.ObjSave), cache.Indexers{})
 			informerListRes = append(informerListRes, informer)
 			indexerListRes = append(indexerListRes, indexer)
+		case queue.Secrets:
+			indexer, informer := cache.NewIndexerInformer(lw, &v1.Secret{}, 0, initHandle(queue.Secrets, worker, clusterName, r.ObjSave), cache.Indexers{})
+			informerListRes = append(informerListRes, informer)
+			indexerListRes = append(indexerListRes, indexer)
 		}
 	}
 	return indexerListRes, informerListRes
@@ -234,6 +238,14 @@ func (r *ResourceAndNamespace) CreateAllAppsV1IndexInformer(client *kubernetes.C
 		switch r.RType {
 		case queue.Deployments:
 			indexer, informer := cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Deployments, worker, clusterName, r.ObjSave), cache.Indexers{})
+			informerListRes = append(informerListRes, informer)
+			indexerListRes = append(indexerListRes, indexer)
+		case queue.Statefulsets:
+			indexer, informer := cache.NewIndexerInformer(lw, &appsv1.StatefulSet{}, 0, initHandle(queue.Statefulsets, worker, clusterName, r.ObjSave), cache.Indexers{})
+			informerListRes = append(informerListRes, informer)
+			indexerListRes = append(indexerListRes, indexer)
+		case queue.Daemonsets:
+			indexer, informer := cache.NewIndexerInformer(lw, &appsv1.DaemonSet{}, 0, initHandle(queue.Daemonsets, worker, clusterName, r.ObjSave), cache.Indexers{})
 			informerListRes = append(informerListRes, informer)
 			indexerListRes = append(indexerListRes, indexer)
 		}
