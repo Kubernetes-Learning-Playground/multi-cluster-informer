@@ -5,7 +5,7 @@ informer机制。调用方仅需要维护config.yaml配置文件与handlerFunc�
 
 支持功能：
 1. 可提供"多集群"informer配置。
-2. 可提供多资源informer，目前只支持pods、services、configmaps、deployments、events等。
+2. 可提供多资源informer，目前只支持pods、services、configmaps、deployments、events、secrets、statefulsets、daemonsets等。
 3. 可支持在配置namespace时，使用all字段来监听所有namespace的特定资源。
 4. 可支持跳过tls认证过程直接调用informer
 5. 可支持回传监听到资源对象的runtime.Object实例

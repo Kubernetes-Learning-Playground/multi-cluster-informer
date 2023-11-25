@@ -21,28 +21,28 @@ type Queue interface {
 	SetReMaxReQueueTime(int)
 }
 
-// wq 使用限速队列实现queue接口
-type wq struct {
+// Wq 使用限速队列实现queue接口
+type Wq struct {
 	workqueue.RateLimitingInterface
 	MaxReQueueTime int
 }
 
-var _ Queue = &wq{}
+var _ Queue = &Wq{}
 
-func NewWorkQueue(maxReQueueTime int) *wq {
-	return &wq{
+func NewWorkQueue(maxReQueueTime int) *Wq {
+	return &Wq{
 		workqueue.NewRateLimitingQueue(workqueue.DefaultItemBasedRateLimiter()),
 		maxReQueueTime,
 	}
 }
 
 // Push 放入队列
-func (c *wq) Push(obj QueueObject) {
+func (c *Wq) Push(obj QueueObject) {
 	c.AddRateLimited(obj)
 }
 
 // Pop 取出队列
-func (c *wq) Pop() (QueueObject, error) {
+func (c *Wq) Pop() (QueueObject, error) {
 	obj, quit := c.Get()
 	if quit {
 		return QueueObject{}, errors.New("Controller has been stoped. ")
@@ -51,13 +51,13 @@ func (c *wq) Pop() (QueueObject, error) {
 }
 
 // Finish 结束要干两件事，忘记+done
-func (c *wq) Finish(obj QueueObject) {
+func (c *Wq) Finish(obj QueueObject) {
 	c.Forget(obj)
 	c.Done(obj)
 }
 
 // ReQueue 重新放入
-func (c *wq) ReQueue(obj QueueObject) error {
+func (c *Wq) ReQueue(obj QueueObject) error {
 	if c.NumRequeues(obj) < c.MaxReQueueTime {
 		// 这里会重新放入对列
 		c.AddRateLimited(obj)
@@ -69,10 +69,10 @@ func (c *wq) ReQueue(obj QueueObject) error {
 	return errors.New("This object has been requeued for many times, but still fails. ")
 }
 
-func (c *wq) Close() {
+func (c *Wq) Close() {
 	c.ShutDown()
 }
 
-func (c *wq) SetReMaxReQueueTime(maxReQueueTime int) {
+func (c *Wq) SetReMaxReQueueTime(maxReQueueTime int) {
 	c.MaxReQueueTime = maxReQueueTime
 }

@@ -8,7 +8,7 @@ The caller only needs to maintain the config.yaml configuration file and handler
 
 Supported:
 1. "Multi-cluster" informer configuration can be provided.
-2. Can provide multi-resource informer, currently only supports pods, services, configmaps, deployments, events, etc.
+2. Can provide multi-resource informer, currently only supports pods,services,configmaps,deployments,events,secrets,statefulsets,daemonsets, etc.
 3. Supports using the all field to monitor specific resources of all namespaces when configuring a namespace.
 4. Can support skipping the TLS authentication process and calling informer directly.
 5. Supports callback to listen to the runtime.Object instance of the resource object.

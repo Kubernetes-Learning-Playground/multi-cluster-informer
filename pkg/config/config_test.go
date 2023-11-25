@@ -15,5 +15,5 @@ func TestLoadConfig(test *testing.T) {
 	}
 	SysConfig = sysConfig
 	fmt.Println(sysConfig)
-	fmt.Println(sysConfig.Clusters[0].ConfigPath)
+	fmt.Println(sysConfig.Clusters[0].MetaData.ConfigPath)
 }

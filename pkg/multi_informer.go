@@ -8,7 +8,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// NewMultiClusterInformerFromConfig 输入配置文件目录，返回MultiClusterInformer对象
+// NewMultiClusterInformerFromConfig 输入配置文件目录，返回 MultiClusterInformer 对象
 // 推荐调用者直接使用此方法初始化对象
 func NewMultiClusterInformerFromConfig(path string) (controller.MultiClusterInformer, error) {
 
@@ -37,43 +37,60 @@ func NewMultiClusterInformer(maxReQueueTime int, clusters []controller.Cluster) 
 		if err != nil {
 			return nil, err
 		}
-		// 遍历所有资源，建立indexer
+		// 遍历所有资源，建立 indexer
 		for _, r := range c.MetaData.List {
 
-			// 当namespace 为all时 单独处理
+			// 当 namespace 为all时 单独处理
 			if r.Namespace == queue.All {
-				if r.RType == queue.Deployments {
+				var indexerListRes []cache.Indexer
+				var informerListRes []cache.Controller
+				switch r.RType {
+				case queue.Deployments:
+					indexerListRes, informerListRes = r.CreateAllAppsV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.Statefulsets:
+					indexerListRes, informerListRes = r.CreateAllAppsV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.Daemonsets:
+					indexerListRes, informerListRes = r.CreateAllAppsV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.Pods:
+					indexerListRes, informerListRes = r.CreateAllCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.ConfigMaps:
+					indexerListRes, informerListRes = r.CreateAllCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.Secrets:
+					indexerListRes, informerListRes = r.CreateAllCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.Services:
+					indexerListRes, informerListRes = r.CreateAllCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.Events:
+					indexerListRes, informerListRes = r.CreateAllCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				}
 
-					indexerListRes, informerListRes, isAll := r.CreateAllAppsV1IndexInformer(client, core.Queue, c.MetaData.ClusterName, true)
-
-					// 全部放入
-					if isAll == true {
-						for k, v := range indexerListRes {
-							store[r.RType] = append(store[r.RType], v)
-							informers = append(informers, informerListRes[k])
-						}
-					}
-
-				} else {
-
-					indexerListRes, informerListRes, isAll := r.CreateAllCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName, true)
-
-					if isAll == true {
-						for k, v := range indexerListRes {
-							store[r.RType] = append(store[r.RType], v)
-							informers = append(informers, informerListRes[k])
-						}
+				for k, v := range indexerListRes {
+					if v != nil || informerListRes[k] != nil {
+						store[r.RType] = append(store[r.RType], v)
+						informers = append(informers, informerListRes[k])
 					}
 
 				}
 
 			} else {
-
 				var indexer cache.Indexer
 				var informer cache.Controller
-				if r.RType == queue.Deployments {
+
+				switch r.RType {
+				case queue.Deployments:
 					indexer, informer = r.CreateAppsV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
-				} else {
+				case queue.Statefulsets:
+					indexer, informer = r.CreateAppsV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.Daemonsets:
+					indexer, informer = r.CreateAppsV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.Pods:
+					indexer, informer = r.CreateCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.ConfigMaps:
+					indexer, informer = r.CreateCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.Secrets:
+					indexer, informer = r.CreateCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.Services:
+					indexer, informer = r.CreateCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
+				case queue.Events:
 					indexer, informer = r.CreateCoreV1IndexInformer(client, core.Queue, c.MetaData.ClusterName)
 				}
 

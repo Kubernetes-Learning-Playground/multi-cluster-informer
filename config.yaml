@@ -15,6 +15,12 @@ clusters:                     # 集群列表
         - rType: events
           namespace: default
           objSave: true
+        - rType: secrets
+          namespace: default
+          objSave: true
+        - rType: statefulsets
+          namespace: default
+          objSave: true
   - metadata:
       clusterName: cluster2
       insecure: true

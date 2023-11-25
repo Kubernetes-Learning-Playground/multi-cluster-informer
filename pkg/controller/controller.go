@@ -159,6 +159,8 @@ func (r *ResourceAndNamespace) CreateCoreV1IndexInformer(client *kubernetes.Clie
 		indexer, informer = cache.NewIndexerInformer(lw, &v1.Pod{}, 0, initHandle(queue.Pods, worker, clusterName, r.ObjSave), cache.Indexers{})
 	case queue.ConfigMaps:
 		indexer, informer = cache.NewIndexerInformer(lw, &v1.ConfigMap{}, 0, initHandle(queue.ConfigMaps, worker, clusterName, r.ObjSave), cache.Indexers{})
+	case queue.Secrets:
+		indexer, informer = cache.NewIndexerInformer(lw, &v1.Secret{}, 0, initHandle(queue.Secrets, worker, clusterName, r.ObjSave), cache.Indexers{})
 	case queue.Events:
 		indexer, informer = cache.NewIndexerInformer(lw, &v1.Event{}, 0, initHandle(queue.Events, worker, clusterName, r.ObjSave), cache.Indexers{})
 	}
@@ -171,16 +173,20 @@ func (r *ResourceAndNamespace) CreateAppsV1IndexInformer(client *kubernetes.Clie
 	switch r.RType {
 	case queue.Deployments:
 		indexer, informer = cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Deployments, worker, clusterName, r.ObjSave), cache.Indexers{})
+	case queue.Statefulsets:
+		indexer, informer = cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Deployments, worker, clusterName, r.ObjSave), cache.Indexers{})
+	case queue.Daemonsets:
+		indexer, informer = cache.NewIndexerInformer(lw, &appsv1.Deployment{}, 0, initHandle(queue.Deployments, worker, clusterName, r.ObjSave), cache.Indexers{})
 	}
 	return
 }
 
 // CreateAllCoreV1IndexInformer 创建选项是 all namespace时的解决方法
-func (r *ResourceAndNamespace) CreateAllCoreV1IndexInformer(client *kubernetes.Clientset, worker queue.Queue, clusterName string, isAll bool) ([]cache.Indexer, []cache.Controller, bool) {
+func (r *ResourceAndNamespace) CreateAllCoreV1IndexInformer(client *kubernetes.Clientset, worker queue.Queue, clusterName string) ([]cache.Indexer, []cache.Controller) {
 	// 1. 先查一下所有ns
 	nsList, err := client.CoreV1().Namespaces().List(context.Background(), v12.ListOptions{})
 	if err != nil {
-		return nil, nil, false
+		return nil, nil
 	}
 	// 2. 遍历所有ns，并创建informer，存入list中，返回
 	var indexerListRes = make([]cache.Indexer, 0)
@@ -207,24 +213,21 @@ func (r *ResourceAndNamespace) CreateAllCoreV1IndexInformer(client *kubernetes.C
 			informerListRes = append(informerListRes, informer)
 			indexerListRes = append(indexerListRes, indexer)
 		}
-
 	}
-
-	return indexerListRes, informerListRes, isAll
-
+	return indexerListRes, informerListRes
 }
 
-// CreateAllAppsV1IndexInformer 创建选项是 all namespace时的解决方法
-func (r *ResourceAndNamespace) CreateAllAppsV1IndexInformer(client *kubernetes.Clientset, worker queue.Queue, clusterName string, isAll bool) ([]cache.Indexer, []cache.Controller, bool) {
-	// 1. 先查一下所有ns
+// CreateAllAppsV1IndexInformer 创建选项是 all namespace 时的解决方法
+func (r *ResourceAndNamespace) CreateAllAppsV1IndexInformer(client *kubernetes.Clientset, worker queue.Queue, clusterName string) ([]cache.Indexer, []cache.Controller) {
+	// 1. 先查一下所有 ns
 	nsList, err := client.CoreV1().Namespaces().List(context.Background(), v12.ListOptions{})
 	if err != nil {
-		return nil, nil, false
+		return nil, nil
 	}
-	// 2. 遍历所有ns，并创建informer，存入list中，返回
+	// 2. 遍历所有 ns，并创建 informer，存入 list 中，返回
 	var indexerListRes = make([]cache.Indexer, 0)
 	var informerListRes = make([]cache.Controller, 0)
-	// 让所有ns都初始化indexers informer
+	// 让所有 ns 都初始化 indexers informer
 	for _, v := range nsList.Items {
 		klog.Infof("informer all [%v] namespace, namespace: [%v]", r.RType, v.Name)
 		lw := cache.NewListWatchFromClient(client.AppsV1().RESTClient(), r.RType, v.Namespace, fields.Everything())
@@ -235,9 +238,7 @@ func (r *ResourceAndNamespace) CreateAllAppsV1IndexInformer(client *kubernetes.C
 			indexerListRes = append(indexerListRes, indexer)
 		}
 	}
-
-	return indexerListRes, informerListRes, isAll
-
+	return indexerListRes, informerListRes
 }
 
 // Cluster 集群对象
